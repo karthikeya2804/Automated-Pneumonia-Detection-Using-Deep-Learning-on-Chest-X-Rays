@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Pneumonia Detection</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script>
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <style>
+        #hospitalsList {
+            max-height: 600px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #94a3b8 #e2e8f0;
+        }
+        
+        #hospitalsList::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #hospitalsList::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 4px;
+        }
+        
+        #hospitalsList::-webkit-scrollbar-thumb {
+            background-color: #94a3b8;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body class="bg-white text-gray-900">
+
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex-shrink-0 flex items-center">
+                    <h1 class="text-xl font-bold text-gray-800">AI Pneumonia Detection</h1>
+                </div>
+                <div class="ml-6 flex items-center">
+                    <div class="relative" id="profileMenu">
+                        <button type="button" 
+                                onclick="toggleProfileMenu()"
+                                class="flex items-center gap-2 bg-white p-1 rounded-full text-gray-700 hover:text-gray-900 focus:outline-none">
+                            <img src="{{ user.picture }}" 
+                                 alt="Profile" 
+                                 class="h-8 w-8 rounded-full">
+                            <span class="hidden md:block text-sm font-medium">{{ user.name }}</span>
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div id="profileDropdown" 
+                             class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5" 
+                             role="menu">
+                            <div class="px-4 py-2 text-sm text-gray-700 border-b">
+                                <div class="font-medium">{{ user.name }}</div>
+                                <div class="text-gray-500">{{ user.email }}</div>
+                            </div>
+                            <a href="{{ url_for('logout') }}" 
+                               class="block px-4 py-2 text-sm text-red-700 hover:bg-gray-100" 
+                               role="menuitem">
+                                Sign out
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-r from-blue-100 to-white py-16 px-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center">
+            <div class="md:w-1/2 mb-10 md:mb-0 md:pr-10">
+                <h1 class="text-4xl sm:text-5xl font-bold leading-tight mb-4">
+                    AI-Powered <span class="text-blue-600">Pneumonia</span> Detection
+                </h1>
+                <p class="text-lg mb-6">
+                    Upload a chest X-ray image and get instant analysis using our advanced deep learning algorithm.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <a href="#upload"
+                        class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium shadow-md hover:shadow-lg">Try It
+                        Now</a>
+                    <a href="#about"
+                        class="border border-blue-600 text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-blue-100">Learn
+                        More</a>
+                </div>
+            </div>
+            <div class="md:w-1/2 flex justify-center">
+                <div class="relative">
+                    <div class="absolute -z-10 w-64 h-64 bg-teal-400 rounded-full blur-3xl opacity-20 animate-pulse">
+                    </div>
+                    <div class="w-64 h-64 text-blue-600"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                            stroke-linejoin="round" class="w-64 h-64 text-blue-600">
+                            <path
+                                d="M6.081 20c-2.469 0-4.5-2.01-4.5-4.476 0-1.136.28-1.897 1.5-3 .555-.505 1.5-2.5 1.5-5.5 0-2.307 1.5-2.973 3-3 1.494-.027 3 .675 3 3.5v10.12c0 2.686 0 5.452-4.5 2.356z" />
+                            <path
+                                d="M17.919 20c2.469 0 4.5-2.01 4.5-4.476 0-1.136-.28-1.897-1.5-3-.555-.505-1.5-2.5-1.5-5.5 0-2.307-1.5-2.973-3-3-1.494-.027-3 .675-3 3.5v10.12c0 2.686 0 5.452 4.5 2.356z" />
+                            <path d="M12 4v7" />
+                            <path d="M9 9h6" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upload Section -->
+    <section id="upload" class="py-16 px-4 bg-gray-50">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold mb-4">Upload Chest X-ray Image</h2>
+                <p class="text-lg">
+                    Upload a clear, frontal chest X-ray image for analysis.
+                </p>
+            </div>
+            <div class="bg-white border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <div class="mb-4 p-4 rounded-full bg-blue-100 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-blue-600" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                </div>
+
+                <form id="uploadForm" action="/predict" method="post" enctype="multipart/form-data">
+                    <input type="file" name="file" accept="image/*" required id="fileInput" class="hidden" />
+                    <label for="fileInput" class="text-blue-600 cursor-pointer font-medium">Browse files</label>
+                    <div class="mt-4">
+                        <img id="previewImage" class="hidden w-full mt-4 rounded-md shadow-md" />
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">Supported formats: PNG, JPG, JPEG (Max size: 5MB)</p>
+                    <div class="flex justify-center mt-6">
+                        <button type="submit"
+                            class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700">
+                            Analyze X-ray
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="hidden text-center mt-6">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p class="mt-2">Analyzing X-ray...</p>
+    </div>
+
+    <!-- Result Section -->
+    <div id="predictionResult" class="hidden mt-8 px-4 max-w-4xl mx-auto">
+        <h3 class="text-2xl font-bold text-center mb-4">Analysis Results</h3>
+        <div class="bg-white rounded-lg shadow-md p-6 text-center">
+            <p id="diagnosis" class="text-4xl font-bold text-black-600 animate-pulse"></p>
+            <p id="probability" class="text-xl font-semibold text-gray-800 mt-3"></p>
+
+            <div id="imageContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                    <b>X-ray</b>
+                    <img id="xrayImage" src="#" alt="X-ray Image" class="rounded-md shadow-md mt-2">
+                </div>
+                <div>
+                    <b>Heatmap</b>
+                    <img id="heatmapImage" src="#" alt="Heatmap Image" class="rounded-md shadow-md mt-2">
+                </div>
+            </div>
+            <p id="errorMessage" class="hidden mt-4 text-red-500"></p>
+        </div>
+    </div>
+    <div id="analysisResult" class="mt-6 p-4 bg-white rounded-lg shadow">
+        <h4 class="text-xl font-semibold mb-3">Detailed Analysis</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+                <h5 class="font-medium">Affected Regions:</h5>
+                <div id="affectedRegions" class="text-sm space-y-1">
+                    <!-- Regions will be populated here -->
+                </div>
+            </div>
+            <div>
+                <h5 class="font-medium mb-2">Heatmap Interpretation:</h5>
+                <div class="text-sm">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                        <span>High activation (severe involvement)</span>
+                    </div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+                        <span>Moderate activation (moderate involvement)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                        <span>Low activation (minimal/no involvement)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 p-3 bg-gray-50 rounded">
+            <h5 class="font-medium mb-2">Clinical Interpretation:</h5>
+            <p id="clinicalAnalysis" class="text-sm">
+                <!-- Analysis text will be populated here -->
+            </p>
+        </div>
+    </div>
+    <button id="showHospitalsBtn" class="bg-blue-500 text-white px-4 py-2 rounded mx-auto block mt-6 hidden">
+        Show Nearby Hospitals
+    </button>
+
+    <!-- Add this div for hospitals list -->
+    <div id="hospitalsList" class="mt-8 max-w-6xl mx-auto px-4"></div>
+
+    <!-- About Section -->
+    <section id="about" class="py-16 px-4 bg-blue-100/30">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold mb-4">About the Technology</h2>
+                <p class="text-lg max-w-3xl mx-auto">
+                    Our AI-powered pneumonia detection system uses state-of-the-art deep learning to analyze chest
+                    X-rays with high accuracy, supporting healthcare professionals in diagnosis.
+                </p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div class="p-6 shadow-md bg-white rounded-lg">
+                    <div class="mb-4 p-3 rounded-full bg-blue-100 w-fit">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                            class="w-8 h-8 text-blue-500">
+                            <rect x="4" y="4" width="16" height="16" rx="2" ry="2" />
+                            <rect x="9" y="9" width="6" height="6" />
+                            <path d="M9 1v2M15 1v2M9 21v2M15 21v2M1 9h2M1 15h2M21 9h2M21 15h2" />
+                        </svg>
+
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Deep Learning Model</h3>
+                    <p>Our system uses a CNN trained on medical datasets to identify pneumonia patterns.</p>
+                </div>
+                <div class="p-6 shadow-md bg-white rounded-lg">
+                    <div class="mb-4 p-3 rounded-full bg-blue-100 w-fit">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                            class="w-8 h-8 text-yellow-500">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 13 10 13 2" />
+                        </svg>
+
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Real-time Analysis</h3>
+                    <p>Get instant results with our advanced pipeline that analyzes X-rays in seconds.</p>
+                </div>
+                <div class="p-6 shadow-md bg-white rounded-lg">
+                    <div class="mb-4 p-3 rounded-full bg-blue-100 w-fit">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                            class="w-8 h-8 text-green-500">
+                            <path d="M17 17v5l-5-3-5 3v-5" />
+                            <circle cx="12" cy="11" r="4" />
+                            <path d="M19.5 10.5a7 7 0 1 0-15 0 7 7 0 0 0 15 0z" />
+                        </svg>
+
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Evidence-based Recommendations</h3>
+                    <p>Receive medical recommendations based on detection probability.</p>
+                </div>
+                <div class="p-6 shadow-md bg-white rounded-lg">
+                    <div class="mb-4 p-3 rounded-full bg-blue-100 w-fit"><svg xmlns="http://www.w3.org/2000/svg"
+                            fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                            stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8 text-purple-500">
+                            <circle cx="6" cy="6" r="3" />
+                            <circle cx="6" cy="18" r="3" />
+                            <circle cx="18" cy="6" r="3" />
+                            <path d="M6 9v6a9 9 0 0 0 9 9" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Visual Explanations</h3>
+                    <p>See highlighted areas in X-rays for better transparency in decision-making.</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-8 md:p-10">
+                <h3 class="text-2xl font-bold mb-6">How It Works</h3>
+                <div class="space-y-6">
+                    <div class="flex items-start gap-6">
+                        <div
+                            class="w-12 h-12 flex items-center justify-center bg-blue-600 text-white font-bold rounded-full">
+                            1</div>
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">Image Upload</h4>
+                            <p>Upload a chest X-ray image through our secure interface.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-6">
+                        <div
+                            class="w-12 h-12 flex items-center justify-center bg-blue-600 text-white font-bold rounded-full">
+                            2</div>
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">AI Processing</h4>
+                            <p>Our CNN analyzes patterns and features indicative of pneumonia.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-6">
+                        <div
+                            class="w-12 h-12 flex items-center justify-center bg-blue-600 text-white font-bold rounded-full">
+                            3</div>
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">Result Generation</h4>
+                            <p>Produces probability score and visual explanations for transparency.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-6">
+                        <div
+                            class="w-12 h-12 flex items-center justify-center bg-blue-600 text-white font-bold rounded-full">
+                            4</div>
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">Clinical Decision Support</h4>
+                            <p>System provides risk assessment and treatment recommendations.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function () {
+            const file = this.files[0];
+            
+            if (file) {
+                document.getElementById('previewImage').src = URL.createObjectURL(file);
+                document.getElementById('previewImage').classList.remove('hidden');
+            }
+        });
+
+        // Update the form submission handler
+        document.getElementById('uploadForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            document.getElementById('loadingSpinner').classList.remove('hidden');
+            document.getElementById('predictionResult').classList.add('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+
+            const formData = new FormData(this);
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Failed to fetch results');
+
+                const result = await response.json();
+                const timestamp = new Date().getTime(); // Add timestamp for cache busting
+
+                // Update diagnosis and probability
+                const diagnosisEl = document.getElementById('diagnosis');
+                const showHospitalsBtn = document.getElementById('showHospitalsBtn');
+                diagnosisEl.textContent = `Diagnosis: ${result.diagnosis}`;
+
+                // Reset styles and update diagnosis display
+                diagnosisEl.classList.remove('text-red-600', 'text-green-600', 'text-yellow-500');
+                
+                const diagnosis = result.diagnosis.toLowerCase();
+                if (diagnosis.includes('high risk')) {
+                    diagnosisEl.classList.add('text-red-600');
+                    showHospitalsBtn.classList.remove('hidden');
+                } else {
+                    diagnosisEl.classList.add(diagnosis.includes('moderate risk') ? 'text-yellow-500' : 'text-green-600');
+                    showHospitalsBtn.classList.add('hidden');
+                }
+
+                document.getElementById('probability').textContent = `Probability: ${result.pneumonia_probability}`;
+                
+                // Add timestamp to URLs to prevent caching
+                document.getElementById('xrayImage').src = `${result.xray_url}?t=${timestamp}`;
+                document.getElementById('heatmapImage').src = `${result.heatmap_url}?t=${timestamp}`;
+
+                document.getElementById('loadingSpinner').classList.add('hidden');
+                document.getElementById('predictionResult').classList.remove('hidden');
+
+                // Update affected regions
+                const affectedRegionsDiv = document.getElementById('affectedRegions');
+                if (result.affected_regions && result.affected_regions.length > 0) {
+                    affectedRegionsDiv.innerHTML = result.affected_regions.map(region => `
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full ${getSeverityColor(region.severity)}"></span>
+                            <span>${region.name}: ${region.severity} severity</span>
+                        </div>
+                    `).join('');
+                } else {
+                    affectedRegionsDiv.innerHTML = '<p>No significant abnormalities detected</p>';
+                }
+
+                // Update clinical interpretation
+                const clinicalAnalysis = document.getElementById('clinicalAnalysis');
+                clinicalAnalysis.innerHTML = generateClinicalInterpretation(result);
+
+            } catch (error) {
+                document.getElementById('loadingSpinner').classList.add('hidden');
+                document.getElementById('errorMessage').textContent = 'An error occurred while processing the image. Please try again.';
+                document.getElementById('errorMessage').classList.remove('hidden');
+            }
+        });
+
+        // Helper function to get severity color
+        function getSeverityColor(severity) {
+            switch(severity.toLowerCase()) {
+                case 'high':
+                    return 'bg-red-500';
+                case 'moderate':
+                    return 'bg-yellow-500';
+                default:
+                    return 'bg-blue-500';
+            }
+        }
+
+        // Helper function to generate clinical interpretation
+        function generateClinicalInterpretation(result) {
+            const probability = parseFloat(result.pneumonia_probability);
+            const affectedCount = result.affected_regions ? result.affected_regions.length : 0;
+            
+            let interpretation = '';
+            
+            if (probability > 0.7) {
+                interpretation = `
+                    <p class="mb-2">High probability of pneumonia detected (${(probability * 100).toFixed(1)}%).</p>
+                    <p class="mb-2">Findings indicate significant involvement in ${affectedCount} lung region(s).</p>
+                    <p class="font-medium text-red-600">Recommendation: Immediate medical consultation advised.</p>
+                `;
+            } else if (probability > 0.3) {
+                interpretation = `
+                    <p class="mb-2">Moderate probability of pneumonia detected (${(probability * 100).toFixed(1)}%).</p>
+                    <p class="mb-2">Some abnormalities noted in ${affectedCount} lung region(s).</p>
+                    <p class="font-medium text-yellow-600">Recommendation: Follow-up with healthcare provider recommended.</p>
+                `;
+            } else {
+                interpretation = `
+                    <p class="mb-2">Low probability of pneumonia (${(probability * 100).toFixed(1)}%).</p>
+                    <p class="mb-2">No significant abnormalities detected.</p>
+                    <p class="font-medium text-green-600">Recommendation: Monitor for any changes in symptoms.</p>
+                `;
+            }
+
+            return interpretation;
+        }
+    </script>
+    <script>
+async function searchNearbyHospitals() {
+    try {
+        const position = await getCurrentPosition();
+        const response = await fetch(`/nearby-hospitals?lat=${position.coords.latitude}&lng=${position.coords.longitude}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        const hospitalsContainer = document.getElementById('hospitalsList');
+        hospitalsContainer.innerHTML = ''; // Clear existing content
+
+        if (data.results && data.results.length > 0) {
+            const hospitalsGrid = document.createElement('div');
+            hospitalsGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+
+            data.results.forEach((place, index) => {
+                const hospitalCard = document.createElement('div');
+                hospitalCard.className = 'bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow';
+                hospitalCard.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="bg-blue-600 text-white w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0">
+                            ${index + 1}
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="font-bold text-lg mb-2">${place.name}</h3>
+                            <p class="text-gray-600 mb-2">${place.vicinity || ''}</p>
+                            ${place.rating ? `
+                                <div class="flex items-center gap-1 mb-2">
+                                    <span class="text-yellow-500">⭐</span>
+                                    <span>${place.rating}</span>
+                                    <span class="text-gray-500">(${place.user_ratings_total} reviews)</span>
+                                </div>
+                            ` : ''}
+                            ${place.opening_hours ? `
+                                <p class="mb-2 ${place.opening_hours.open_now ? 'text-green-600' : 'text-red-600'}">
+                                    ${place.opening_hours.open_now ? '✓ Open now' : '✗ Closed'}
+                                </p>
+                            ` : ''}
+                            <div class="mt-3">
+                                <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(place.name)}"
+                                   target="_blank"
+                                   class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                                    Get Directions
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                hospitalsGrid.appendChild(hospitalCard);
+            });
+
+            hospitalsContainer.appendChild(hospitalsGrid);
+        } else {
+            hospitalsContainer.innerHTML = `
+                <div class="text-center p-4 bg-yellow-50 text-yellow-800 rounded">
+                    No hospitals found in your area
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error("Error searching for hospitals:", error);
+        alert("Failed to find nearby hospitals. Please try again.");
+    }
+}
+
+// Update the button click handler
+document.getElementById('showHospitalsBtn').addEventListener('click', async () => {
+    const button = document.getElementById('showHospitalsBtn');
+    try {
+        button.disabled = true;
+        button.textContent = 'Loading...';
+        await searchNearbyHospitals();
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Failed to load hospitals. Please check your location settings and try again.");
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Show Nearby Pulmonologist Hospitals';
+    }
+});
+
+// Keep the getCurrentPosition function
+function getCurrentPosition() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error("Geolocation is not supported by your browser"));
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+        });
+    });
+}
+</script>
+<script>
+function toggleProfileMenu() {
+    const dropdown = document.getElementById('profileDropdown');
+    dropdown.classList.toggle('hidden');
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function closeDropdown(e) {
+        const profileMenu = document.getElementById('profileMenu');
+        if (!profileMenu.contains(e.target)) {
+            dropdown.classList.add('hidden');
+            document.removeEventListener('click', closeDropdown);
+        }
+    });
+}
+
+// Close dropdown when pressing escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.getElementById('profileDropdown').classList.add('hidden');
+    }
+});
+</script>
+
+    <footer class="bg-gray-800 text-white py-6 mt-10">
+        <div class="max-w-7xl mx-auto text-center">
+            <p>&copy; 2025 AI Pneumonia Detection. All rights reserved.</p>
+            <p>Powered by AI and Deep Learning</p>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.js"></script>
+  
+</body>
+
+</html>
